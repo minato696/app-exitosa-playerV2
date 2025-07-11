@@ -9,6 +9,11 @@ interface Station {
   image?: string;
 }
 
+function formatTime(time: string | undefined): string {
+  if (!time) return '00:00';
+  return time.slice(0, 5);
+}
+
 interface ProgramInfo {
   title: string;
   subtitle: string;
@@ -105,7 +110,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         
         {/* Hora de inicio */}
         <div className="time-start">
-          {currentProgram?.start_time || '00:00'}
+          {formatTime(currentProgram?.start_time)}
         </div>
         
         {/* Progress bar del programa */}
@@ -129,7 +134,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         
         {/* Hora de fin */}
         <div className="time-end">
-          {currentProgram?.end_time || '00:00'}
+        {formatTime(currentProgram?.end_time)}
         </div>
       </div>
     </div>

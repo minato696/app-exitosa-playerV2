@@ -12,20 +12,24 @@ export async function GET(request: NextRequest) {
     
     let query = 'SELECT p.*, s.name as station_name FROM programs p LEFT JOIN stations s ON p.station_id = s.id WHERE 1=1';
     const params: any[] = [];
+    let paramCount = 0;
     
     if (stationId) {
-      query += ' AND p.station_id = ?';
+      paramCount++;
+      query += ` AND p.station_id = $${paramCount}`;
       params.push(stationId);
     }
     
     if (dayType) {
-      query += ' AND p.day_type = ?';
+      paramCount++;
+      query += ` AND p.day_type = $${paramCount}`;
       params.push(dayType);
     }
     
     if (active !== null) {
-      query += ' AND p.active = ?';
-      params.push(active === 'true' ? 1 : 0);
+      paramCount++;
+      query += ` AND p.active = $${paramCount}`;
+      params.push(active === 'true');
     }
     
     query += ' ORDER BY p.start_time ASC';
@@ -72,13 +76,13 @@ export async function POST(request: NextRequest) {
     
     const result = await db.execute({
       sql: `INSERT INTO programs (station_id, name, host, start_time, end_time, image, description, day_type) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
       args: [station_id, name, host, start_time, end_time, image || null, description || null, day_type]
     });
     
     return NextResponse.json({
       success: true,
-      data: { id: Number(result.lastInsertRowid), ...body }
+      data: { id: result.rows[0].id, ...body }
     });
   } catch (error) {
     console.error('Error al crear programa:', error);
@@ -102,21 +106,11 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    // Si se proporciona una nueva imagen y había una anterior, podríamos eliminar la anterior
-    if (image) {
-      const oldProgram = await db.execute({
-        sql: 'SELECT image FROM programs WHERE id = ?',
-        args: [id]
-      });
-      
-      // Aquí podrías agregar lógica para eliminar la imagen anterior si es diferente
-    }
-    
     await db.execute({
       sql: `UPDATE programs 
-            SET station_id = ?, name = ?, host = ?, start_time = ?, end_time = ?, 
-                image = ?, description = ?, day_type = ?, active = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?`,
+            SET station_id = $1, name = $2, host = $3, start_time = $4, end_time = $5, 
+                image = $6, description = $7, day_type = $8, active = $9, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $10`,
       args: [
         station_id, 
         name, 
@@ -126,7 +120,7 @@ export async function PUT(request: NextRequest) {
         image, 
         description, 
         day_type, 
-        active !== undefined ? (active ? 1 : 0) : 1,
+        active !== undefined ? active : true,
         id
       ]
     });
@@ -161,13 +155,13 @@ export async function DELETE(request: NextRequest) {
     if (hard) {
       // Obtener la imagen antes de eliminar
       const program = await db.execute({
-        sql: 'SELECT image FROM programs WHERE id = ?',
+        sql: 'SELECT image FROM programs WHERE id = $1',
         args: [id]
       });
       
       // Eliminar permanentemente
       await db.execute({
-        sql: 'DELETE FROM programs WHERE id = ?',
+        sql: 'DELETE FROM programs WHERE id = $1',
         args: [id]
       });
       
@@ -175,7 +169,7 @@ export async function DELETE(request: NextRequest) {
     } else {
       // Soft delete
       await db.execute({
-        sql: 'UPDATE programs SET active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        sql: 'UPDATE programs SET active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
         args: [id]
       });
     }
@@ -207,7 +201,7 @@ export async function PATCH(request: NextRequest) {
     }
     
     await db.execute({
-      sql: 'UPDATE programs SET image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      sql: 'UPDATE programs SET image = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       args: [image, id]
     });
     

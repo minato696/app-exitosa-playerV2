@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
     // Buscar el programa actual basado en la hora
     const programResult = await db.execute({
       sql: `SELECT * FROM programs 
-            WHERE station_id = ? 
-            AND day_type = ? 
-            AND start_time <= ? 
-            AND end_time > ?
+            WHERE station_id = $1 
+            AND day_type = $2 
+            AND start_time <= $3::time 
+            AND end_time > $4::time
             ORDER BY start_time DESC 
             LIMIT 1`,
       args: [stationId, dayType, currentTime, currentTime]
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     
     // Obtener metadata en vivo si existe
     const liveResult = await db.execute({
-      sql: 'SELECT * FROM live_metadata WHERE station_id = ? ORDER BY updated_at DESC LIMIT 1',
+      sql: 'SELECT * FROM live_metadata WHERE station_id = $1 ORDER BY updated_at DESC LIMIT 1',
       args: [stationId]
     });
     
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     
     // Verificar si ya existe metadata para esta estación
     const existing = await db.execute({
-      sql: 'SELECT id FROM live_metadata WHERE station_id = ?',
+      sql: 'SELECT id FROM live_metadata WHERE station_id = $1',
       args: [station_id]
     });
     
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
       // Actualizar registro existente
       await db.execute({
         sql: `UPDATE live_metadata 
-              SET program_name = ?, host = ?, description = ?, start_time = ?, 
-                  end_time = ?, listeners_count = ?, updated_at = CURRENT_TIMESTAMP
-              WHERE station_id = ?`,
+              SET program_name = $1, host = $2, description = $3, start_time = $4::time, 
+                  end_time = $5::time, listeners_count = $6, updated_at = CURRENT_TIMESTAMP
+              WHERE station_id = $7`,
         args: [program_name, host, description, start_time, end_time, listeners_count || 0, station_id]
       });
     } else {
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       await db.execute({
         sql: `INSERT INTO live_metadata 
               (station_id, program_name, host, description, start_time, end_time, listeners_count) 
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              VALUES ($1, $2, $3, $4, $5::time, $6::time, $7)`,
         args: [station_id, program_name, host, description, start_time, end_time, listeners_count || 0]
       });
     }

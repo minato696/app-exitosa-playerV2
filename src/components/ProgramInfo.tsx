@@ -22,6 +22,11 @@ interface LiveMetadata {
   listeners_count?: number;
 }
 
+function formatTime(time: string | undefined): string {
+  if (!time) return '';
+  return time.slice(0, 5);
+}
+
 interface ProgramInfoProps {
   station: Station;
   programInfo: ProgramInfo;
@@ -51,8 +56,9 @@ export const ProgramInfo: React.FC<ProgramInfoProps> = ({
       
       <p className="program-time-globalplayer">
         {isPlaying && currentProgram ? (
-          `${programInfo.subtitle} • ${currentProgram.start_time} - ${currentProgram.end_time}`
-        ) : (
+`${programInfo.subtitle} • ${formatTime(currentProgram.start_time)} - ${formatTime(currentProgram.end_time)}`
+
+) : (
           station.city
         )}
       </p>

@@ -1,81 +1,186 @@
 // src/lib/db.ts
-import { createClient } from '@libsql/client';
+import { Pool } from 'pg';
+import { sql } from '@vercel/postgres';
 
-export const db = createClient({
-  url: 'file:local.db',
+// Configuración para Railway PostgreSQL
+const connectionString = process.env.DATABASE_URL;
+
+// Pool de conexiones para queries directas
+export const pool = new Pool({
+  connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Inicializar tablas
+// Helper para ejecutar queries compatibles con el código anterior
+export const db = {
+  execute: async ({ sql: query, args = [] }: { sql: string; args?: any[] }) => {
+    try {
+      // Reemplazar ? por $1, $2, etc. para PostgreSQL
+      let pgQuery = query;
+      let paramIndex = 1;
+      while (pgQuery.includes('?')) {
+        pgQuery = pgQuery.replace('?', `$${paramIndex}`);
+        paramIndex++;
+      }
+      
+      const result = await pool.query(pgQuery, args);
+      return {
+        rows: result.rows,
+        rowCount: result.rowCount,
+        lastInsertRowid: result.rows[0]?.id || null
+      };
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+};
+
+// Función para cerrar la conexión (útil para scripts)
+export const closeConnection = async () => {
+  await pool.end();
+};
+
+// Inicializar tablas con PostgreSQL
 export async function initDatabase() {
   try {
-    // Tabla de estaciones mejorada
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS stations (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        url TEXT NOT NULL,
-        image TEXT,
-        description TEXT,
-        region TEXT NOT NULL,
-        city TEXT NOT NULL,
-        active BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Tabla de estaciones mejorada para PostgreSQL
+    await db.execute({
+      sql: `
+        CREATE TABLE IF NOT EXISTS stations (
+          id VARCHAR(50) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          url TEXT NOT NULL,
+          image TEXT,
+          description TEXT,
+          region VARCHAR(100) NOT NULL,
+          city VARCHAR(100) NOT NULL,
+          active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+      args: []
+    });
 
-    // Tabla de programas mejorada
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS programs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        station_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        host TEXT NOT NULL,
-        start_time TEXT NOT NULL,
-        end_time TEXT NOT NULL,
-        image TEXT,
-        description TEXT,
-        day_type TEXT NOT NULL CHECK (day_type IN ('weekday', 'saturday', 'sunday')),
-        active BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE
-      )
-    `);
+    // Crear trigger para actualizar updated_at automáticamente
+    await db.execute({
+      sql: `
+        CREATE OR REPLACE FUNCTION update_updated_at_column()
+        RETURNS TRIGGER AS $$
+        BEGIN
+          NEW.updated_at = CURRENT_TIMESTAMP;
+          RETURN NEW;
+        END;
+        $$ language 'plpgsql';
+      `,
+      args: []
+    });
+
+    await db.execute({
+      sql: `
+        DROP TRIGGER IF EXISTS update_stations_updated_at ON stations;
+        CREATE TRIGGER update_stations_updated_at 
+        BEFORE UPDATE ON stations 
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      `,
+      args: []
+    });
+
+    // Tabla de programas mejorada para PostgreSQL
+    await db.execute({
+      sql: `
+        CREATE TABLE IF NOT EXISTS programs (
+          id SERIAL PRIMARY KEY,
+          station_id VARCHAR(50) NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          host VARCHAR(255) NOT NULL,
+          start_time TIME NOT NULL,
+          end_time TIME NOT NULL,
+          image TEXT,
+          description TEXT,
+          day_type VARCHAR(20) NOT NULL CHECK (day_type IN ('weekday', 'saturday', 'sunday')),
+          active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE
+        )
+      `,
+      args: []
+    });
+
+    await db.execute({
+      sql: `
+        DROP TRIGGER IF EXISTS update_programs_updated_at ON programs;
+        CREATE TRIGGER update_programs_updated_at 
+        BEFORE UPDATE ON programs 
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      `,
+      args: []
+    });
 
     // Tabla de redes sociales por región
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS social_links (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        station_id TEXT NOT NULL,
-        facebook TEXT,
-        youtube TEXT,
-        tiktok TEXT,
-        instagram TEXT,
-        twitter TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE
-      )
-    `);
+    await db.execute({
+      sql: `
+        CREATE TABLE IF NOT EXISTS social_links (
+          id SERIAL PRIMARY KEY,
+          station_id VARCHAR(50) NOT NULL,
+          facebook TEXT,
+          youtube TEXT,
+          tiktok TEXT,
+          instagram TEXT,
+          twitter TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE
+        )
+      `,
+      args: []
+    });
+
+    await db.execute({
+      sql: `
+        DROP TRIGGER IF EXISTS update_social_links_updated_at ON social_links;
+        CREATE TRIGGER update_social_links_updated_at 
+        BEFORE UPDATE ON social_links 
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      `,
+      args: []
+    });
 
     // Tabla de metadata actual (programa en vivo)
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS live_metadata (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        station_id TEXT NOT NULL,
-        program_name TEXT,
-        host TEXT,
-        description TEXT,
-        start_time TEXT,
-        end_time TEXT,
-        listeners_count INTEGER DEFAULT 0,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE
-      )
-    `);
+    await db.execute({
+      sql: `
+        CREATE TABLE IF NOT EXISTS live_metadata (
+          id SERIAL PRIMARY KEY,
+          station_id VARCHAR(50) NOT NULL,
+          program_name VARCHAR(255),
+          host VARCHAR(255),
+          description TEXT,
+          start_time TIME,
+          end_time TIME,
+          listeners_count INTEGER DEFAULT 0,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE
+        )
+      `,
+      args: []
+    });
 
-    console.log('Base de datos inicializada correctamente');
+    await db.execute({
+      sql: `
+        DROP TRIGGER IF EXISTS update_live_metadata_updated_at ON live_metadata;
+        CREATE TRIGGER update_live_metadata_updated_at 
+        BEFORE UPDATE ON live_metadata 
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      `,
+      args: []
+    });
+
+    console.log('Base de datos PostgreSQL inicializada correctamente');
     
     // Insertar datos iniciales si no existen
     await seedInitialData();
@@ -85,12 +190,16 @@ export async function initDatabase() {
   }
 }
 
-// Seed de datos iniciales mejorado
+// Seed de datos iniciales mejorado para PostgreSQL
 async function seedInitialData() {
   try {
     // Verificar si ya hay datos
-    const stations = await db.execute('SELECT COUNT(*) as count FROM stations');
-    if (stations.rows[0].count > 0) {
+    const stations = await db.execute({
+      sql: 'SELECT COUNT(*) as count FROM stations',
+      args: []
+    });
+    
+    if (parseInt(stations.rows[0].count) > 0) {
       console.log('La base de datos ya contiene datos');
       return;
     }
@@ -208,10 +317,10 @@ async function seedInitialData() {
     ];
 
     for (const station of stationData) {
-      await db.execute(
-        'INSERT INTO stations (id, name, url, image, description, region, city) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [station.id, station.name, station.url, station.image, station.description, station.region, station.city]
-      );
+      await db.execute({
+        sql: 'INSERT INTO stations (id, name, url, image, description, region, city) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        args: [station.id, station.name, station.url, station.image, station.description, station.region, station.city]
+      });
     }
 
     // Insertar redes sociales para las principales estaciones
@@ -243,10 +352,10 @@ async function seedInitialData() {
     ];
 
     for (const social of socialData) {
-      await db.execute(
-        'INSERT INTO social_links (station_id, facebook, youtube, tiktok) VALUES (?, ?, ?, ?)',
-        [social.station_id, social.facebook, social.youtube, social.tiktok]
-      );
+      await db.execute({
+        sql: 'INSERT INTO social_links (station_id, facebook, youtube, tiktok) VALUES ($1, $2, $3, $4)',
+        args: [social.station_id, social.facebook, social.youtube, social.tiktok]
+      });
     }
 
     console.log('Datos iniciales insertados correctamente');

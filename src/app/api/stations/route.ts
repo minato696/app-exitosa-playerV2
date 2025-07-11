@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     const params: any[] = [];
     
     if (active !== null) {
-      query += ' WHERE active = ?';
-      params.push(active === 'true' ? 1 : 0);
+      query += ' WHERE active = $1';
+      params.push(active === 'true');
     }
     
     query += ' ORDER BY name ASC';
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     
     // Verificar si el ID ya existe
     const existing = await db.execute({
-      sql: 'SELECT id FROM stations WHERE id = ?',
+      sql: 'SELECT id FROM stations WHERE id = $1',
       args: [id]
     });
     
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     
     const result = await db.execute({
       sql: `INSERT INTO stations (id, name, url, image, description, region, city) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       args: [id, name, url, image || null, description || null, region, city]
     });
     
@@ -97,10 +97,10 @@ export async function PUT(request: NextRequest) {
     
     await db.execute({
       sql: `UPDATE stations 
-            SET name = ?, url = ?, image = ?, description = ?, region = ?, 
-                city = ?, active = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?`,
-      args: [name, url, image, description, region, city, active !== undefined ? (active ? 1 : 0) : 1, id]
+            SET name = $1, url = $2, image = $3, description = $4, region = $5, 
+                city = $6, active = $7, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $8`,
+      args: [name, url, image, description, region, city, active !== undefined ? active : true, id]
     });
     
     return NextResponse.json({
@@ -131,15 +131,30 @@ export async function DELETE(request: NextRequest) {
     }
     
     if (hard) {
-      // Eliminar permanentemente
+      // Eliminar permanentemente - primero eliminar dependencias
       await db.execute({
-        sql: 'DELETE FROM stations WHERE id = ?',
+        sql: 'DELETE FROM live_metadata WHERE station_id = $1',
+        args: [id]
+      });
+      
+      await db.execute({
+        sql: 'DELETE FROM social_links WHERE station_id = $1',
+        args: [id]
+      });
+      
+      await db.execute({
+        sql: 'DELETE FROM programs WHERE station_id = $1',
+        args: [id]
+      });
+      
+      await db.execute({
+        sql: 'DELETE FROM stations WHERE id = $1',
         args: [id]
       });
     } else {
       // Soft delete
       await db.execute({
-        sql: 'UPDATE stations SET active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        sql: 'UPDATE stations SET active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
         args: [id]
       });
     }
