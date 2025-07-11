@@ -12,7 +12,6 @@
     "db:load-programs": "node scripts/load-programs.js"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.7",
     "@vercel/postgres": "^0.10.0",
     "dotenv": "^17.2.0",
     "lucide-react": "^0.511.0",

@@ -23,20 +23,8 @@ body > div:first-child {
   background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 100%);
 }
 
-/* Evitar scroll durante la carga */
-body.loading {
-  overflow: hidden;
-}
 
-/* Asegurar que las pantallas de loading tengan prioridad */
-.premium-loading-container {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 999999 !important;
-}
+
 
 /* Suavizar transiciones */
 * {
@@ -58,17 +46,6 @@ body.loading {
   }
 }
 
-/* Optimizaciones de performance */
-.premium-loading-container *,
-.premium-loading-container *::before,
-.premium-loading-container *::after {
-  will-change: transform, opacity;
-}
-
-/* Prevenir FOUC (Flash of Unstyled Content) */
-body:not(.loading) .player-container {
-  animation: appEntrance 0.5s ease-out;
-}
 
 @keyframes appEntrance {
   from {

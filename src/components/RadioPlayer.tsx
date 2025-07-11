@@ -10,7 +10,6 @@ import { StationsCarousel } from './StationsCarousel';
 import { ProgramInfo } from './ProgramInfo';
 import { CoverDisplay } from './CoverDisplay';
 import { ControlsBar } from './ControlsBar';
-import { LoadingScreenPremium } from './LoadingScreenPremium';
 
 const RadioPlayer: React.FC = () => {
   const {
@@ -36,8 +35,16 @@ const RadioPlayer: React.FC = () => {
   } = useRadioPlayer();
 
   // Estados de carga
+// Si está cargando, mostrar la interfaz normal pero vacía
 if (isLoading) {
-  return <LoadingScreenPremium message="Cargando" />;
+  return (
+    <div className="player-container">
+      <SidebarMenu />
+      <div className="main-content">
+        {/* La interfaz aparecerá cuando termine de cargar */}
+      </div>
+    </div>
+  );
 }
 
   if (stations.length === 0) {
