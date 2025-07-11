@@ -1,0 +1,162 @@
+/* src/styles/sidebar-menu.css */
+:root {
+  --color-primary: #D70007;
+  --color-primary-dark: #910005;
+  --color-primary-light: #ff6b6f;
+  --color-secondary: #094293;  /* Azul marino del sitio web */
+  --color-blue: #094293;       /* Color azul para elementos secundarios */
+  --sidebar-width: 60px;
+  --sidebar-expanded-width: 180px;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  transition: width 0.3s ease;
+  overflow: hidden;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar.expanded {
+  width: var(--sidebar-expanded-width);
+}
+
+/* Ícono superior */
+.sidebar-icon {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-icon-inner {
+  background-color: var(--color-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Menú principal */
+.sidebar-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+  display: block;
+  padding: 0;
+  margin: 0;
+}
+
+/* Container para iconos y texto */
+.menu-item {
+  width: 100%;
+  height: 60px; /* Aumentado para que coincida con tu diseño */
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--color-primary);
+  padding: 0;
+  margin: 0;
+}
+
+/* Icono centralizado - siempre centrado sin importar si está expandido o no */
+.menu-item-icon {
+  width: var(--sidebar-width);
+  height: 60px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+/* Texto que aparece a la derecha del ícono cuando se expande */
+.menu-item-text {
+  position: absolute;
+  left: var(--sidebar-width);
+  top: 0;
+  height: 60px;
+  line-height: 60px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  font-weight: 500;
+  z-index: 1;
+}
+
+.sidebar.expanded .menu-item-text {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.menu-item.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.menu-item.inactive:hover {
+  background-color: rgba(215, 0, 7, 0.1);
+}
+
+/* Eliminar borde derecho y asegurar que no haya espacios */
+.sidebar:not(.expanded) {
+  border-right: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+  }
+  
+  .sidebar.expanded {
+    width: 100%;
+    height: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+  }
+  
+  .sidebar-menu {
+    flex-direction: row;
+  }
+  
+  .sidebar.expanded .sidebar-menu {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .menu-item-text {
+    display: none;
+  }
+  
+  .sidebar.expanded .menu-item-text {
+    display: inline;
+  }
+}

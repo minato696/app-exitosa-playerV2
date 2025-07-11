@@ -1,0 +1,888 @@
+/* src/styles/radio-player.csss Completo */
+:root {
+  --color-primary: #D70007;
+  --color-primary-dark: #910005;
+  --color-primary-light: #ff6b6f;
+  --color-secondary: #094293;  /* Azul marino del sitio web */
+  --color-white: #FFFFFF;
+  --color-light-gray: #F5F5F5;
+  --color-gray: #E5E5E5;      /* Fondo más claro, similar a GlobalPlayer */
+  --color-dark-gray: #999999;
+  --color-text: #333333;
+  --color-text-light: #777777;
+  --sidebar-width: 60px;
+  --header-height: 60px;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-light-gray);
+  overflow: hidden;
+}
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Contenedor principal */
+.player-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  color: var(--color-white);
+}
+
+/* Contenido principal */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-gray);
+  background-image: url('/background/desktop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding-bottom: 98px; /* ✅ Espacio para controles fijos */
+}
+
+/* Estados de carga */
+.loading-screen,
+.error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--color-text);
+  gap: 16px;
+  background-color: var(--color-light-gray);
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  color: var(--color-primary);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Barra de estaciones - estilo carrusel GlobalPlayer */
+.stations-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  background-color: transparent;
+  position: relative;
+  margin: 20px 0;
+}
+
+/* Flechas de navegación para el carrusel */
+.carousel-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 0 10px;
+  color: #333;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.carousel-arrow:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.carousel-arrow:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Círculos de estaciones - estilo GlobalPlayer */
+.station-button {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilo para botón de estación mientras se reproduce */
+.station-button.playing {
+  width: 90px;
+  height: 90px;
+  box-shadow: 0 0 0 3px var(--color-primary);
+}
+
+.station-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.station-button.active {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.station-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.station-button-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.station-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.station-button.active .station-name {
+  color: var(--color-primary);
+}
+
+/* Área de contenido - estilo GlobalPlayer */
+.content-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Información del programa - estilo GlobalPlayer */
+.program-info-globalplayer {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  text-align: left;
+  z-index: 10;
+}
+
+.on-air-badge {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  position: relative;
+  padding-left: 24px;
+}
+
+/* Indicador animado EN VIVO */
+.on-air-badge::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.program-title-globalplayer {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.program-time-globalplayer {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Contador de oyentes */
+.listeners-count {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 8px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Cover container - estilo GlobalPlayer */
+.cover-container {
+  width: 500px;
+  height: 500px;
+  background-color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  font-size: 24px;
+  color: white;
+  gap: 12px;
+}
+
+.placeholder svg {
+  opacity: 0.8;
+}
+
+.station-placeholder-name {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.station-placeholder-frequency {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+/* Botón de play centrado en la cover */
+.play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s, box-shadow 0.3s;
+  z-index: 20;
+}
+
+.play-button:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Overlay de buffering */
+.buffering-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+}
+
+.buffering-spinner {
+  animation: spin 1s linear infinite;
+  color: white;
+}
+
+/* Controles - estilo GlobalPlayer */
+.controls-bar {
+  padding: 12px 20px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  position: fixed; /* ✅ Fijo en la parte inferior */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000; /* ✅ Siempre visible */
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1); /* ✅ Sombra hacia arriba */
+}
+
+.controls-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  height: 74px;
+}
+
+.now-playing-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+.now-playing-cover {
+  width: 58px;
+  height: 58px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* ✅ Sombra para la imagen */
+  background-color: #f3f4f6; /* ✅ Fondo por defecto */
+}
+
+.now-playing-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.now-playing-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.now-playing-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #111827;
+}
+
+.now-playing-artist {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.player-control-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.player-control-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.player-control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.player-control-button.play {
+  width: 48px;
+  height: 48px;
+  background-color: #dc2626;
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3); /* ✅ Sombra del botón rojo */
+}
+
+.player-control-button.play:hover:not(:disabled) {
+  background-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4); /* ✅ Sombra más intensa al hover */
+}
+
+.time-start, .time-end {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  min-width: 50px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.program-progress-section {
+  flex: 1;
+  margin: 0 12px;
+  min-width: 200px;
+}
+
+.program-progress-bar, .simple-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.program-progress-fill, .progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #dc2626, #ef4444); /* ✅ Gradiente rojo */
+  border-radius: 3px;
+  transition: width 1s ease-linear;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3); /* ✅ Sombra sutil */
+}
+
+.progress-bar-fill {
+  transition: width 0.3s ease;
+}
+
+/* ===== RESPONSIVE DESIGN - TABLET ===== */
+@media (max-width: 992px) {
+  .cover-container {
+    width: 400px;
+    height: 400px;
+  }
+  
+  .program-title-globalplayer {
+    font-size: 28px;
+  }
+}
+
+/* ===== RESPONSIVE DESIGN - MÓVIL ===== */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+    padding-bottom: 0; /* ✅ Sin padding extra en body */
+  }
+
+  .player-container {
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* Mejor soporte para móvil */
+    padding-bottom: 0; /* ✅ Sin padding en container */
+  }
+  
+  .main-content {
+    background-position: center top;
+    padding: 0;
+    padding-bottom: 85px; /* ✅ Más espacio para controles fijos en móvil */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  /* Carrusel de estaciones para móvil */
+  .stations-bar {
+    margin: 15px 0 10px 0;
+    padding: 12px 0;
+    order: 1;
+    flex-shrink: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+  }
+  
+  .station-button {
+    width: 55px;
+    height: 55px;
+    margin: 0 5px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .station-button.playing {
+    width: 65px;
+    height: 65px;
+    box-shadow: 0 0 0 2px var(--color-primary), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .station-button.active {
+    transform: scale(1.05);
+  }
+  
+  .carousel-arrow {
+    width: 32px;
+    height: 32px;
+    margin: 0 6px;
+    background-color: rgba(255, 255, 255, 0.4);
+  }
+  
+  /* Área de contenido móvil */
+  .content-area {
+    order: 2;
+    padding: 5px 20px 15px 20px; /* ✅ Menos padding superior */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* ✅ Centrado, no flex-start */
+    align-items: center;
+    min-height: 0;
+    overflow: hidden;
+    padding-top: 20px; /* ✅ Más espacio arriba para que baje la imagen */
+  }
+  
+  /* Información del programa centrada */
+  .program-info-globalplayer {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    text-align: center;
+    margin-bottom: 25px; /* ✅ Más margen inferior */
+    order: 1;
+    flex-shrink: 0;
+  }
+  
+  .on-air-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+  
+  .program-title-globalplayer {
+    font-size: 22px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+  
+  .program-time-globalplayer {
+    font-size: 14px;
+    margin: 0;
+    opacity: 0.95;
+  }
+  
+  .listeners-count {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  
+  /* Cover container para móvil */
+  .cover-container {
+    width: 280px;
+    height: 280px;
+    margin: 0 auto;
+    order: 2;
+    flex-shrink: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+  }
+  
+  .play-button {
+    width: 70px;
+    height: 70px;
+  }
+  
+  /* Controles en la parte inferior */
+  .controls-bar {
+    order: 3;
+    padding: 15px 16px; /* ✅ Más padding vertical */
+    background-color: rgba(255, 255, 255, 0.98); /* ✅ Más opaco */
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    position: fixed; /* ✅ Mantener fijo en móvil */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15); /* ✅ Sombra más prominente */
+  }
+  
+  .controls-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    height: 60px; /* ✅ Altura consistente con el espacio reservado */
+    max-width: 100%;
+    justify-content: space-between;
+  }
+  
+  /* Información del programa en controles */
+  .now-playing-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    max-width: 140px;
+    overflow: hidden;
+  }
+  
+  .now-playing-cover {
+    width: 42px;
+    height: 42px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  
+  .now-playing-text {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .now-playing-title {
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.3;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .now-playing-artist {
+    font-size: 10px;
+    margin: 0;
+    line-height: 1.2;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Controles de reproducción */
+  .player-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    justify-content: center;
+  }
+  
+  .player-control-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .player-control-button.play {
+    width: 44px;
+    height: 44px;
+  }
+  
+  /* Sección de tiempo y progreso */
+  .time-start {
+    font-size: 10px;
+    font-weight: 500;
+    color: #374151;
+    min-width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  
+  .program-progress-section {
+    flex: 1;
+    margin: 0 6px;
+    min-width: 60px;
+    max-width: 100px;
+  }
+  
+  .program-progress-bar, .simple-progress-bar {
+    height: 3px;
+    border-radius: 2px;
+  }
+  
+  .time-end {
+    font-size: 10px;
+    font-weight: 500;
+    color: #374151;
+    min-width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+}
+
+/* Pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .content-area {
+    padding: 10px 15px 12px 15px; /* ✅ Más padding superior */
+    padding-top: 30px; /* ✅ Aún más espacio arriba */
+  }
+  
+  .program-info-globalplayer {
+    margin-bottom: 30px; /* ✅ Más margen para separar de la imagen */
+  }
+  
+  .cover-container {
+    width: 260px;
+    height: 260px;
+  }
+  
+  .program-title-globalplayer {
+    font-size: 20px;
+  }
+  
+  .program-time-globalplayer {
+    font-size: 13px;
+  }
+  
+  .station-button {
+    width: 50px;
+    height: 50px;
+    margin: 0 4px;
+  }
+  
+  .station-button.playing {
+    width: 58px;
+    height: 58px;
+  }
+  
+  .controls-container {
+    gap: 6px;
+    height: 52px;
+  }
+  
+  .controls-bar {
+    padding: 10px 12px;
+  }
+  
+  .now-playing-info {
+    max-width: 120px;
+    gap: 6px;
+  }
+  
+  .now-playing-cover {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .now-playing-title {
+    font-size: 11px;
+  }
+  
+  .now-playing-artist {
+    font-size: 9px;
+  }
+  
+  .player-control-button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .player-control-button.play {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .time-start, .time-end {
+    font-size: 9px;
+    min-width: 28px;
+  }
+  
+  .program-progress-section {
+    margin: 0 4px;
+    min-width: 50px;
+    max-width: 80px;
+  }
+}
+
+/* Landscape mode en móvil */
+@media (max-width: 768px) and (orientation: landscape) {
+  .content-area {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 10px 20px;
+  }
+  
+  .program-info-globalplayer {
+    order: 1;
+    text-align: left;
+    margin-bottom: 0;
+    flex: 1;
+    max-width: 300px;
+  }
+  
+  .cover-container {
+    order: 2;
+    width: 220px;
+    height: 220px;
+    margin: 0;
+  }
+  
+  .program-title-globalplayer {
+    font-size: 18px;
+  }
+  
+  .program-time-globalplayer {
+    font-size: 12px;
+  }
+}
